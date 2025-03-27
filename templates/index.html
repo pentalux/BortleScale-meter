@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Light Pollution Checker</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <canvas id="starfield"></canvas>
+    <div class="container">
+        <h1>Light Pollution Checker</h1>
+        <div id="map"></div>
+        <div class="input-group">
+            <div class="coordinates">
+                <input type="text" id="latitude" placeholder="Latitude" readonly>
+                <input type="text" id="longitude" placeholder="Longitude" readonly>
+            </div>
+            <button id="check-btn">Check Light Pollution</button>
+        </div>
+        <div class="result-container">
+            <div class="result" id="result"></div>
+            <div class="description" id="description"></div>
+            <div class="source" id="source"></div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="{{ url_for('static', filename='js/constellations.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>

@@ -1,0 +1,220 @@
+body {
+    margin: 0;
+    font-family: 'Arial', sans-serif;
+    background-color: #0a0a1a;
+    color: #ffffff;
+    overflow-x: hidden;
+}
+
+#starfield {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+    background: radial-gradient(ellipse at bottom, #1B2735 0%, #090A0F 100%);
+}
+
+.container {
+    position: relative;
+    z-index: 1;
+    max-width: 800px;
+    margin: 20px auto;
+    padding: 25px;
+    background-color: rgba(25, 25, 25, 0.9);
+    border-radius: 15px;
+    box-shadow: 0 0 30px rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(5px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+h1 {
+    font-size: 2.5rem;
+    margin-bottom: 25px;
+    color: #ffffff;
+    text-align: center;
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+}
+
+#map {
+    height: 350px;
+    width: 100%;
+    margin: 20px 0;
+    border-radius: 10px;
+    border: 2px solid #ffffff;
+    box-shadow: 0 0 15px rgba(255, 255, 255, 0.1);
+}
+
+.input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin: 25px 0;
+}
+
+.coordinates {
+    display: flex;
+    gap: 15px;
+}
+
+.coordinates input {
+    flex: 1;
+    padding: 12px;
+    border: 1px solid #cccccc;
+    border-radius: 8px;
+    background-color: rgba(0, 0, 0, 0.4);
+    color: #ffffff;
+    font-size: 1rem;
+    text-align: center;
+    transition: all 0.3s ease;
+}
+
+.coordinates input:focus {
+    outline: none;
+    border-color: #ffffff;
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
+}
+
+#check-btn {
+    padding: 14px;
+    background: linear-gradient(135deg, #555555, #333333);
+    border: none;
+    border-radius: 8px;
+    color: white;
+    font-size: 1.1rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-top: 10px;
+    width: 100%;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+#check-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 5px 15px rgba(255, 255, 255, 0.1);
+    background: linear-gradient(135deg, #666666, #444444);
+}
+
+#check-btn:active {
+    transform: translateY(1px);
+}
+
+#check-btn:disabled {
+    background: linear-gradient(135deg, #333333, #222222);
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+
+.result-container {
+    margin-top: 25px;
+    background-color: rgba(30, 30, 30, 0.8);
+    padding: 20px;
+    border-radius: 10px;
+    border-left: 4px solid #ffffff;
+    animation: fadeIn 0.5s ease-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.result {
+    font-size: 1.8rem;
+    color: #ffffff;
+    font-weight: bold;
+    margin-bottom: 10px;
+    text-align: center;
+}
+
+.description {
+    font-size: 1.1rem;
+    color: #dddddd;
+    line-height: 1.6;
+    text-align: center;
+}
+
+@media (max-width: 768px) {
+    .container {
+        margin: 10px;
+        padding: 15px;
+    }
+    
+    h1 {
+        font-size: 2rem;
+    }
+    
+    .coordinates {
+        flex-direction: column;
+    }
+    
+    #map {
+        height: 300px;
+    }
+}
+
+
+@keyframes twinkle {
+    0%, 100% { opacity: 0.7; }
+    50% { opacity: 0.3; }
+}
+.loading-spinner {
+    border: 3px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    border-top: 3px solid white;
+    width: 20px;
+    height: 20px;
+    animation: spin 1s linear infinite;
+    display: inline-block;
+    vertical-align: middle;
+    margin-right: 10px;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.bortle-level {
+    font-size: 1.5rem;
+    font-weight: bold;
+    display: block;
+    margin-bottom: 10px;
+}
+
+.bortle-meter {
+    display: flex;
+    gap: 3px;
+    margin: 15px 0;
+    height: 20px;
+}
+
+.bortle-meter .level {
+    flex: 1;
+    background: #333;
+    border-radius: 2px;
+}
+
+.bortle-meter .level.active {
+    background: linear-gradient(to top, #555, #fff);
+}
+
+.error-icon {
+    font-size: 1.5rem;
+    vertical-align: middle;
+    margin-right: 10px;
+}
+
+.error-message {
+    vertical-align: middle;
+}
+
+.estimated {
+    color: #ccc;
+    font-style: italic;
+}
+
