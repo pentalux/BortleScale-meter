@@ -41,7 +41,14 @@ async function getBortleLevel() {
     try {
         showLoading();
         
-        const response = await fetch(`/api/light-pollution?lat=${lat}&lon=${lon}`);
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 15000);
+        
+        const response = await fetch(`/api/light-pollution?lat=${lat}&lon=${lon}`, {
+            signal: controller.signal
+        });
+        
+        clearTimeout(timeoutId);
         
         if (!response.ok) {
             const err = await response.json().catch(() => null);
@@ -49,63 +56,88 @@ async function getBortleLevel() {
         }
         
         const data = await response.json();
+        
+        // Логируем в консоль информацию о запросе
+        console.log(`Light pollution data for ${data.location}:`);
+        console.log(`- Bortle Level: ${data.bortle_level}/9`);
+        console.log(`- Description: ${bortleDescriptions[data.bortle_level]}`);
+        console.log(`- Coordinates: ${data.location}`);
+        
         showResults(data);
         
     } catch (error) {
         console.error("API Error:", error);
-        showError(error.message);
-        showFallbackEstimation(lat, lon);
+        if (error.name === 'AbortError') {
+            showError("Request timeout - service is taking too long to respond");
+        } else {
+            showError(error.message);
+        }
     }
 }
 
 function showLoading() {
     document.getElementById("result").innerHTML = `
-        <div class="loading-spinner"></div>
-        <span>Analyzing light pollution...</span>
+        <div class="loading-container">
+            <div class="loading-spinner-large"></div>
+            <div class="loading-text">Analyzing light pollution data...</div>
+            <div class="loading-subtext">Querying scientific databases</div>
+        </div>
     `;
     document.getElementById("description").textContent = "";
-    document.getElementById("source").textContent = "";
-    document.getElementById("check-btn").disabled = true;
+    
+    const btn = document.getElementById("check-btn");
+    btn.innerHTML = '<div class="button-loading-spinner"></div> Processing...';
+    btn.disabled = true;
 }
 
 function showResults(data) {
+    const btn = document.getElementById("check-btn");
+    btn.innerHTML = 'Check Light Pollution';
+    btn.disabled = false;
+    
+    // Создаем HTML с общей шкалой
     document.getElementById("result").innerHTML = `
-        <span class="bortle-level">Bortle Scale: ${data.bortle_level}</span>
+        <div class="result-animation">
+            <span class="bortle-level">Bortle Scale: ${data.bortle_level}/9</span>
+            <div class="bortle-meter">
+                <div class="level" style="width: ${(data.bortle_level / 9) * 100}%"></div>
+                <div class="current-level" style="left: ${(data.bortle_level / 9) * 100}%"></div>
+            </div>
+        </div>
     `;
+    
     document.getElementById("description").textContent = 
         bortleDescriptions[data.bortle_level] || "No description available";
-    document.getElementById("source").textContent = `Data source: ${data.source}`;
-    document.getElementById("check-btn").disabled = false;
+    
+    // Запускаем анимацию шкалы после небольшой задержки
+    setTimeout(() => {
+        const meter = document.querySelector('.bortle-meter');
+        if (meter) {
+            meter.classList.add('animate');
+        }
+    }, 100);
     
     if (marker) {
         marker.setPopupContent(`
-            Location: ${data.location}<br>
-            Bortle Scale: ${data.bortle_level}<br>
-            ${bortleDescriptions[data.bortle_level]}
+            <strong>Location:</strong> ${data.location}<br>
+            <strong>Bortle Scale:</strong> ${data.bortle_level}/9<br>
+            <strong>Description:</strong> ${bortleDescriptions[data.bortle_level]}
         `);
     }
 }
 
 function showError(message) {
-    document.getElementById("result").innerHTML = `
-        <span class="error-icon">⚠️</span>
-        <span class="error-message">${message}</span>
-    `;
-    document.getElementById("description").textContent = "Trying alternative methods...";
-    document.getElementById("check-btn").disabled = false;
-}
-
-function showFallbackEstimation(lat, lon) {
-    const estimated = Math.min(9, Math.max(1, 
-        Math.floor((Math.abs(lat) / 10) + (Math.abs(lon) / 180 * 3))
-    ));
+    const btn = document.getElementById("check-btn");
+    btn.innerHTML = 'Check Light Pollution';
+    btn.disabled = false;
     
     document.getElementById("result").innerHTML = `
-        <span class="estimated">Estimated Bortle: ${estimated}</span>
+        <div class="error-container result-animation">
+            <span class="error-icon">⚠️</span>
+            <span class="error-message">${message}</span>
+        </div>
     `;
-    document.getElementById("description").textContent = 
-        bortleDescriptions[estimated] || "Approximate estimation";
-    document.getElementById("source").textContent = "Source: Fallback algorithm";
+    document.getElementById("description").textContent = "Please try again or select a different location.";
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -116,4 +148,3 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.getElementById('check-btn').addEventListener('click', getBortleLevel);
 });
-
