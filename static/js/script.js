@@ -80,7 +80,6 @@ function showLoading() {
         <div class="loading-container">
             <div class="loading-spinner-large"></div>
             <div class="loading-text">Analyzing light pollution data...</div>
-            <div class="loading-subtext">Querying scientific databases</div>
         </div>
     `;
     document.getElementById("description").textContent = "";
@@ -137,7 +136,6 @@ function showError(message) {
             <span class="error-message">${message}</span>
         </div>
     `;
-    document.getElementById("description").textContent = "Please try again or select a different location.";
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -147,4 +145,62 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     document.getElementById('check-btn').addEventListener('click', getBortleLevel);
+});
+// Добавить в конец файла script.js
+
+// Анимация появления при скролле
+function checkScroll() {
+    const elements = document.querySelectorAll('.fade-in');
+    elements.forEach(element => {
+        const elementTop = element.getBoundingClientRect().top;
+        const windowHeight = window.innerHeight;
+        
+        if (elementTop < windowHeight - 100) {
+            element.classList.add('visible');
+        }
+    });
+}
+
+// Проверяем при загрузке и скролле
+window.addEventListener('load', checkScroll);
+window.addEventListener('scroll', checkScroll);
+
+// Инициализируем карту по центру экрана
+document.addEventListener('DOMContentLoaded', () => {
+    // ... существующий код ...
+    
+    // Проверяем видимость информационного раздела
+    checkScroll();
+});
+// Добавить в конец файла script.js
+
+// Аккордеон для информации о шкале Бортля
+document.addEventListener('DOMContentLoaded', function() {
+    const accordionToggle = document.getElementById('accordion-toggle');
+    const accordionContent = document.getElementById('accordion-content');
+    const accordionIcon = document.querySelector('.accordion-icon');
+
+    if (accordionToggle && accordionContent) {
+        accordionToggle.addEventListener('click', function() {
+            const isExpanded = accordionContent.classList.contains('expanded');
+            
+            if (isExpanded) {
+                accordionContent.classList.remove('expanded');
+                accordionIcon.classList.remove('rotated');
+            } else {
+                accordionContent.classList.add('expanded');
+                accordionIcon.classList.add('rotated');
+                
+                // Плавная прокрутка к развернутому контенту
+                setTimeout(() => {
+                    accordionContent.scrollIntoView({ 
+                        behavior: 'smooth', 
+                        block: 'nearest' 
+                    });
+                }, 300);
+            }
+        });
+    }
+    
+    // Остальной существующий код...
 });

@@ -320,3 +320,262 @@ h1 {
     image-rendering: -webkit-optimize-contrast;
     image-rendering: crisp-edges;
 }
+/* Стили для информационного раздела */
+.info-section {
+    margin-top: 50px;
+    padding: 40px;
+    background-color: rgba(30, 30, 30, 0.7);
+    border-radius: 20px;
+    backdrop-filter: blur(15px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.info-section h2 {
+    text-align: center;
+    margin-bottom: 30px;
+    font-size: 2rem;
+    color: #ffffff;
+    text-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
+}
+
+.bortle-scale-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+    margin-bottom: 40px;
+}
+
+.bortle-level-card {
+    background: rgba(40, 40, 40, 0.8);
+    padding: 20px;
+    border-radius: 12px;
+    border-left: 4px solid;
+}
+
+
+/* Цвета для каждого уровня Бортля */
+.level-1 { border-color: #001122; background: linear-gradient(135deg, #001122, #003366); }
+.level-2 { border-color: #003366; background: linear-gradient(135deg, #003366, #0055aa); }
+.level-3 { border-color: #0055aa; background: linear-gradient(135deg, #0055aa, #3366cc); }
+.level-4 { border-color: #3366cc; background: linear-gradient(135deg, #3366cc, #5577ee); }
+.level-5 { border-color: #5577ee; background: linear-gradient(135deg, #5577ee, #7777ff); }
+.level-6 { border-color: #7777ff; background: linear-gradient(135deg, #7777ff, #9977ff); }
+.level-7 { border-color: #9977ff; background: linear-gradient(135deg, #9977ff, #bb77ff); }
+.level-8 { border-color: #bb77ff; background: linear-gradient(135deg, #bb77ff, #dd77ff); }
+.level-9 { border-color: #dd77ff; background: linear-gradient(135deg, #dd77ff, #ffffff); }
+
+.level-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.level-color {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    margin-right: 10px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+}
+
+.level-title {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #ffffff;
+}
+
+.level-description {
+    color: #cccccc;
+    line-height: 1.5;
+}
+
+.creator-links {
+    text-align: center;
+    padding-top: 30px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.creator-links a {
+    color: #ffffff;
+    text-decoration: none;
+    margin: 0 15px;
+    padding: 10px 20px;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 25px;
+    transition: all 0.3s ease;
+    display: inline-block;
+}
+
+.creator-links a:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(255, 255, 255, 0.2);
+}
+
+/* Анимация появления при скролле */
+.fade-in {
+    opacity: 0;
+    transform: translateY(30px);
+    transition: all 0.6s ease;
+}
+
+.fade-in.visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+/* Стили для аккордеона */
+.info-section {
+    margin-top: 30px;
+    background-color: rgba(30, 30, 30, 0.7);
+    border-radius: 15px;
+    backdrop-filter: blur(15px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    overflow: hidden;
+}
+
+.accordion-header {
+    padding: 20px;
+    border: 3px solid white;
+    border-radius: 15px;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    transition: all 0.3s ease;
+}
+
+.accordion-header:hover {
+    background: rgba(50, 50, 50, 0.9);
+}
+
+.accordion-header h2 {
+    margin: 0;
+    font-size: 1.3rem;
+    color: #ffffff;
+}
+
+.accordion-icon {
+    font-size: 1.5rem;
+    transition: transform 0.3s ease;
+    color: #ffffff;
+}
+
+.accordion-icon.rotated {
+    transform: rotate(180deg);
+}
+
+.accordion-content {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.5s ease;
+    padding: 0 20px;
+}
+
+.accordion-content.expanded {
+    max-height: 2000px;
+    padding: 20px;
+}
+
+/* Новый дизайн для уровней Бортля */
+.bortle-levels-container {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.bortle-level-item {
+    display: flex;
+    align-items: center;
+    background: rgba(50, 50, 50, 0.6);
+    border-radius: 10px;
+    padding: 15px;
+}
+
+
+.level-color-indicator {
+    width: 60px;
+    height: 60px;
+    border-radius: 10px;
+    margin-right: 20px;
+    flex-shrink: 0;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+}
+
+.level-content {
+    flex: 1;
+}
+
+.level-title {
+    font-size: 1.1rem;
+    font-weight: bold;
+    color: #ffffff;
+    margin-bottom: 5px;
+}
+
+.level-description {
+    color: #cccccc;
+    font-size: 0.9rem;
+    line-height: 1.4;
+}
+
+.creator-links {
+    text-align: center;
+    padding: 25px 20px 15px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    margin-top: 20px;
+}
+
+.creator-links a {
+    color: #ffffff;
+    text-decoration: none;
+    margin: 0 0px;
+    padding: 8px 16px;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 20px;
+    transition: all 0.3s ease;
+    display: inline-block;
+    font-size: 0.9rem;
+}
+
+.creator-links a:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    transform: translateY(-2px);
+}
+
+/* Центрирование основного контейнера */
+.container {
+    position: relative;
+    z-index: 1;
+    max-width: 800px;
+    width: 100%;
+    margin: 20px auto;
+    padding: 30px;
+    background-color: rgba(25, 25, 25, 0.8);
+    border-radius: 20px;
+    box-shadow: 0 0 40px rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(15px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-sizing: border-box;
+}
+
+/* Адаптивность для мобильных */
+@media (max-width: 768px) {
+    .bortle-level-item {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .level-color-indicator {
+        margin-right: 0;
+        margin-bottom: 15px;
+        width: 50px;
+        height: 50px;
+    }
+    
+    .container {
+        margin: 10px auto;
+        padding: 20px;
+    }
+}
