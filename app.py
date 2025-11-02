@@ -1,239 +1,416 @@
 from flask import Flask, render_template, request, jsonify
 from flask_cors import CORS
-import requests
-from geopy.geocoders import Nominatim
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.common.action_chains import ActionChains
+from PIL import Image
+import numpy as np
+import logging
+import threading
+import time
 import os
-from dotenv import load_dotenv
+import math
+import re
+from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeoutError
+import atexit
 
-load_dotenv()
 
 app = Flask(__name__)
 CORS(app)
 
-geolocator = Nominatim(user_agent="light_pollution_app_v13")
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
-def get_urbanization_level(lat, lon):
-    """Определяем уровень урбанизации на основе OSM данных"""
+# --- Глобальные переменные ---
+executor = ThreadPoolExecutor(max_workers=1)
+browser_lock = threading.Lock()
+driver = None
+
+def init_browser():
+    """Инициализация браузера"""
+    global driver
     try:
-        # Overpass API запрос для анализа плотности объектов
-        overpass_url = "http://overpass-api.de/api/interpreter"
+        chrome_options = Options()
+        chrome_options.add_argument("--headless=new")
+        chrome_options.add_argument("--no-sandbox")
+        chrome_options.add_argument("--disable-dev-shm-usage")
+        chrome_options.add_argument("--disable-gpu")
+        chrome_options.add_argument("--window-size=1400,1000")
+        chrome_options.add_argument("--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
         
-        overpass_query = f"""
-        [out:json];
-        (
-          // Все возможные объекты в радиусе 50км
-          node["place"~"city|town|village|hamlet|island"](around:50000,{lat},{lon});
-          way["landuse"~"industrial|commercial|residential|retail"](around:50000,{lat},{lon});
-          node["amenity"~"university|hospital|school|college"](around:50000,{lat},{lon});
-          way["building"](around:50000,{lat},{lon});
-          relation["boundary"="national_park"](around:50000,{lat},{lon});
-          way["landuse"~"forest|meadow|farmland|grass"](around:50000,{lat},{lon});
-          way["natural"~"wood|water|coastline|beach"](around:50000,{lat},{lon});
-          node["natural"~"bay|cape|cliff"](around:50000,{lat},{lon});
-        );
-        out count;
+        from webdriver_manager.chrome import ChromeDriverManager
+        from selenium.webdriver.chrome.service import Service
+        
+        service = Service(ChromeDriverManager().install())
+        driver = webdriver.Chrome(service=service, options=chrome_options)
+        
+        driver.set_page_load_timeout(30)
+        logger.info("Browser initialized")
+        
+    except Exception as e:
+        logger.error(f"Browser init failed: {e}")
+        raise
+
+def ensure_browser_ready():
+    global driver
+    if driver is None:
+        init_browser()
+    return driver is not None
+
+def cleanup_screenshots():
+    """Очищаем скриншоты"""
+    screenshots_dir = "debug_screenshots"
+    if not os.path.exists(screenshots_dir):
+        return
+        
+    for filename in os.listdir(screenshots_dir):
+        if filename.endswith('.png'):
+            try:
+                os.remove(os.path.join(screenshots_dir, filename))
+            except:
+                pass
+
+def save_screenshot(name, description, bortle_level):
+    """Сохраняем скриншот"""
+    screenshots_dir = "debug_screenshots"
+    if not os.path.exists(screenshots_dir):
+        os.makedirs(screenshots_dir)
+    
+    timestamp = int(time.time())
+    filename = f"map_{name}_{description}_bortle{bortle_level}_{timestamp}.png"
+    return os.path.join(screenshots_dir, filename)
+
+def navigate_to_coordinates(lat, lon):
+    """Простая навигация к координатам"""
+    try:
+        # Простая очистка кэша
+        driver.delete_all_cookies()
+        
+        url = f"https://www.lightpollutionmap.info/#zoom=10&lat={lat}&lon={lon}&layers=B0FFFFFFTFFFF"
+        logger.info(f"Opening URL: {url}")
+        
+        driver.get(url)
+        time.sleep(10)  # Даем больше времени на загрузку
+        
+        return True
+            
+    except Exception as e:
+        logger.error(f"Navigation failed: {e}")
+        return False
+
+def set_max_opacity():
+    """Устанавливаем максимальную прозрачность"""
+    try:
+        js_code = """
+        setTimeout(function() {
+            // Пробуем найти слайдеры opacity
+            const sliders = document.querySelectorAll('input[type="range"]');
+            sliders.forEach(slider => {
+                if (slider.min === '0' && slider.max === '100') {
+                    slider.value = '100';
+                    slider.dispatchEvent(new Event('input', { bubbles: true }));
+                    slider.dispatchEvent(new Event('change', { bubbles: true }));
+                }
+            });
+        }, 2000);
         """
         
-        response = requests.post(overpass_url, data=overpass_query, timeout=15)
-        
-        if response.status_code == 200:
-            data = response.json()
-            elements = data.get('elements', [])
-            
-            # Считаем объекты по типам
-            city_count = 0
-            town_count = 0
-            village_count = 0
-            industrial_count = 0
-            building_count = 0
-            natural_count = 0
-            water_count = 0
-            total_objects = len(elements)
-            
-            for element in elements:
-                tags = element.get('tags', {})
-                
-                if tags.get('place') == 'city':
-                    city_count += 1
-                elif tags.get('place') == 'town':
-                    town_count += 1
-                elif tags.get('place') in ['village', 'hamlet']:
-                    village_count += 1
-                elif tags.get('landuse') in ['industrial', 'commercial', 'retail']:
-                    industrial_count += 1
-                elif tags.get('building'):
-                    building_count += 1
-                elif (tags.get('boundary') == 'national_park' or 
-                      tags.get('landuse') in ['forest', 'meadow', 'farmland'] or
-                      tags.get('natural') in ['wood', 'beach']):
-                    natural_count += 1
-                elif tags.get('natural') in ['water', 'bay', 'cape', 'cliff']:
-                    water_count += 1
-            
-            print(f"Total objects: {total_objects}")
-            print(f"Cities: {city_count}, Towns: {town_count}, Villages: {village_count}")
-            print(f"Industrial: {industrial_count}, Buildings: {building_count}")
-            print(f"Natural: {natural_count}, Water: {water_count}")
-            
-            # ПРОВЕРКА НА ОКЕАН: если очень мало объектов вообще
-            if total_objects <= 2:
-                print("Very few objects - likely ocean/remote area")
-                return 1
-            
-            # ПРОВЕРКА НА ВОДНЫЕ ОБЪЕКТЫ
-            if water_count >= 5 and total_objects <= 10:
-                print("Many water objects, few others - likely ocean")
-                return 1
-            
-            # 1. Крупные городские объекты
-            if city_count >= 2 or (city_count >= 1 and industrial_count >= 3):
-                return 9
-            elif city_count >= 1:
-                return 8
-            
-            # 2. Средние городские объекты
-            elif town_count >= 2 or (town_count >= 1 and industrial_count >= 2):
-                return 7
-            elif town_count >= 1:
-                return 6
-            
-            # 3. Малые населенные пункты
-            elif village_count >= 3 or building_count >= 10:
-                return 5
-            elif village_count >= 1 or building_count >= 5:
-                return 4
-            
-            # 4. Природные зоны
-            elif natural_count >= 10 and total_objects <= 20:
-                return 1  # Дикая природа
-            elif natural_count >= 5:
-                return 2  # Природная зона
-            elif natural_count >= 2:
-                return 3  # Сельская местность
-            
-            # 5. Если дошли сюда и объектов мало - скорее всего вода/пустыня
-            elif total_objects <= 5:
-                return 1
-            else:
-                return 3
-                
-        else:
-            print(f"Overpass API error: Status {response.status_code}")
-            return get_fallback_estimation(lat, lon)
+        driver.execute_script(js_code)
+        time.sleep(3)
+        logger.info("Opacity set to 100%")
         
     except Exception as e:
-        print(f"Overpass API error: {str(e)}")
-        return get_fallback_estimation(lat, lon)
+        logger.warning(f"Opacity setting failed: {e}")
 
-def get_fallback_estimation(lat, lon):
-    """Резервный метод на основе геолокации и координат"""
+def click_multiple_locations():
+    """Кликаем в нескольких местах - ТОЧНЫЕ КЛИКИ В ЦЕНТР"""
     try:
-        location = geolocator.reverse((lat, lon), exactly_one=True, language='en', timeout=10)
-        if location:
-            address = location.raw.get('address', {})
-            address_str = str(address).lower()
-            
-            print(f"Fallback address: {address}")
-            
-            # Проверяем на океан/море
-            ocean_keywords = ['ocean', 'sea', 'pacific', 'atlantic', 'indian', 'arctic', 'gulf', 'bay']
-            if any(keyword in address_str for keyword in ocean_keywords):
-                return 1
-            
-            # Проверяем на национальные парки и заповедники
-            if any(keyword in address_str for keyword in ['national_park', 'nature_reserve', 'wilderness']):
-                return 1
-            
-            # Проверяем городские признаки
-            if 'city' in address:
-                return 8
-            elif 'town' in address:
-                return 6
-            elif 'village' in address:
-                return 4
-            elif any(keyword in address_str for keyword in ['forest', 'mountain', 'lake', 'river']):
-                return 2
-            else:
-                return 3
+        WebDriverWait(driver, 15).until(
+            EC.presence_of_element_located((By.TAG_NAME, "canvas"))
+        )
+        
+        canvas = driver.find_element(By.TAG_NAME, "canvas")
+        action = ActionChains(driver)
+        
+        # БОЛЕЕ ТОЧНЫЕ КЛИКИ В ЦЕНТР И БЛИЗКИЕ ТОЧКИ
+        click_points = [
+            (400, 300),  # Точно центр
+            (395, 295),  # Слегка смещено
+            (405, 305),  # Слегка смещено
+            (390, 290),  # Еще немного
+            (410, 310),  # Еще немного
+        ]
+        
+        for i, (x, y) in enumerate(click_points):
+            try:
+                logger.info(f"Click attempt {i+1} at ({x}, {y})")
+                action.move_to_element_with_offset(canvas, x, y).click().perform()
+                time.sleep(2)
                 
-        # ГЕОГРАФИЧЕСКАЯ ПРОВЕРКА по координатам
-        # Удаленные океанские координаты
-        if is_ocean_coordinate(lat, lon):
-            return 1
-        # Пустыни и удаленные территории
-        elif is_desert_coordinate(lat, lon):
-            return 1
-        # Горные и лесные районы
-        elif is_mountain_forest_coordinate(lat, lon):
-            return 2
-            
-        return 3
+                # Проверяем popup
+                popup_data = get_popup_data()
+                if popup_data:
+                    logger.info(f"Found popup data on attempt {i+1}")
+                    return popup_data
+                    
+            except Exception as e:
+                logger.warning(f"Click {i+1} failed: {e}")
+                continue
+        
+        return None
         
     except Exception as e:
-        print(f"Geolocation fallback error: {e}")
-        # Последняя проверка - чисто по координатам
-        if is_ocean_coordinate(lat, lon):
-            return 1
-        return 3
+        logger.error(f"Multiple clicks failed: {e}")
+        return None
 
-def is_ocean_coordinate(lat, lon):
-    """Проверяем, находится ли точка в океане по координатам"""
-    # Тихий океан
-    if (-60 <= lat <= 60) and (120 <= abs(lon) <= 180):
-        return True
-    # Атлантический океан
-    if (-60 <= lat <= 60) and (30 <= abs(lon) <= 80):
-        return True
-    # Индийский океан
-    if (-60 <= lat <= 30) and (40 <= lon <= 120):
-        return True
-    # Арктика/Антарктика
-    if abs(lat) > 70:
-        return True
-    return False
+def get_popup_data():
+    """Получаем данные из всплывающего окна"""
+    try:
+        # Сначала делаем скриншот всей страницы
+        page_screenshot = save_screenshot("debug", "page", "check")
+        driver.save_screenshot(page_screenshot)
+        logger.info(f"Page screenshot saved: {page_screenshot}")
+        
+        # Ищем popup элементы
+        popup_selectors = [
+            "div.leaflet-popup",
+            ".leaflet-popup-content", 
+            "[class*='popup']",
+            "[class*='tooltip']"
+        ]
+        
+        for selector in popup_selectors:
+            try:
+                elements = driver.find_elements(By.CSS_SELECTOR, selector)
+                logger.info(f"Found {len(elements)} elements with selector: {selector}")
+                
+                for i, element in enumerate(elements):
+                    try:
+                        if element.is_displayed():
+                            popup_text = element.text
+                            logger.info(f"Popup {i} text: {popup_text}")
+                            
+                            if popup_text.strip():
+                                parsed_data = parse_popup_text(popup_text)
+                                if parsed_data:
+                                    return parsed_data
+                    except Exception as e:
+                        logger.warning(f"Element {i} check failed: {e}")
+                        continue
+            except Exception as e:
+                logger.warning(f"Selector {selector} failed: {e}")
+                continue
+        
+        return None
+        
+    except Exception as e:
+        logger.error(f"Popup data extraction failed: {e}")
+        return None
 
-def is_desert_coordinate(lat, lon):
-    """Проверяем пустынные регионы"""
-    # Сахара
-    if (15 <= lat <= 30) and (-20 <= lon <= 50):
-        return True
-    # Аравийская пустыня
-    if (15 <= lat <= 30) and (35 <= lon <= 60):
-        return True
-    # Гоби
-    if (35 <= lat <= 45) and (90 <= lon <= 120):
-        return True
-    # Австралийские пустыни
-    if (-30 <= lat <= -20) and (120 <= lon <= 140):
-        return True
-    return False
+def parse_popup_text(popup_text):
+    """Парсим текст для извлечения уровня Бортля - ФИКС ДИАПАЗОНОВ"""
+    try:
+        logger.info(f"Parsing text: {popup_text}")
+        
+        # СНАЧАЛА ИЩЕМ ДИАПАЗОНЫ (например: "3-4", "8-9")
+        range_patterns = [
+            r'Bortle[:\s]*(\d+)[-\s]+(\d+)',
+            r'Class[:\s]*(\d+)[-\s]+(\d+)',
+            r'Level[:\s]*(\d+)[-\s]+(\d+)',
+            r'Scale[:\s]*(\d+)[-\s]+(\d+)',
+            r'(\d+)[-\s]+(\d+)/9'
+        ]
+        
+        for pattern in range_patterns:
+            matches = re.findall(pattern, popup_text, re.IGNORECASE)
+            if matches:
+                min_level = int(matches[0][0])
+                max_level = int(matches[0][1])
+                if 1 <= min_level <= 9 and 1 <= max_level <= 9:
+                    # БЕРЕМ НАИБОЛЬШЕЕ ЗНАЧЕНИЕ (худший случай)
+                    bortle_level = max(min_level, max_level)
+                    logger.info(f"Found Bortle range {min_level}-{max_level}, using worst case: {bortle_level}")
+                    return {
+                        'bortle_level': bortle_level,
+                        'source': 'Bortle Range',
+                        'confidence': 'high',
+                        'range': f"{min_level}-{max_level}"
+                    }
+        
+        # ЕСЛИ НЕТ ДИАПАЗОНА, ИЩЕМ ОДИНОЧНЫЕ ЗНАЧЕНИЯ (как раньше)
+        bortle_patterns = [
+            r'Bortle[:\s]*(\d+)',
+            r'Class[:\s]*(\d+)',
+            r'Level[:\s]*(\d+)', 
+            r'Scale[:\s]*(\d+)',
+            r'(\d)/9'
+        ]
+        
+        for pattern in bortle_patterns:
+            matches = re.findall(pattern, popup_text, re.IGNORECASE)
+            if matches:
+                bortle_level = int(matches[0])
+                if 1 <= bortle_level <= 9:
+                    logger.info(f"Found single Bortle level: {bortle_level}")
+                    return {
+                        'bortle_level': bortle_level,
+                        'source': 'Direct Bortle',
+                        'confidence': 'high'
+                    }
+        
+        # ОСТАЛЬНАЯ ЛОГИКА БЕЗ ИЗМЕНЕНИЙ...
+        value_patterns = [
+            r'(\d+\.?\d*)\s*[µµ]cd/m²',
+            r'(\d+\.?\d*)\s*nW/cm²/sr',
+            r'Radiance[:\s]*(\d+\.?\d*)',
+            r'Value[:\s]*(\d+\.?\d*)'
+        ]
+        
+        for pattern in value_patterns:
+            matches = re.findall(pattern, popup_text, re.IGNORECASE)
+            if matches:
+                value = float(matches[0])
+                bortle_level = value_to_bortle(value)
+                logger.info(f"Found value {value} -> Bortle {bortle_level}")
+                return {
+                    'bortle_level': bortle_level,
+                    'raw_value': value,
+                    'source': 'Numeric Value',
+                    'confidence': 'high'
+                }
+        
+        numbers = re.findall(r'\d+\.?\d*', popup_text)
+        for num in numbers:
+            try:
+                value = float(num)
+                if 0.01 <= value <= 100:
+                    bortle_level = value_to_bortle(value)
+                    logger.info(f"Found potential value {value} -> Bortle {bortle_level}")
+                    return {
+                        'bortle_level': bortle_level,
+                        'raw_value': value,
+                        'source': 'Auto-detected Value',
+                        'confidence': 'medium'
+                    }
+            except:
+                continue
+        
+        return None
+        
+    except Exception as e:
+        logger.error(f"Popup parsing failed: {e}")
+        return None
 
-def is_mountain_forest_coordinate(lat, lon):
-    """Проверяем горные и лесные регионы"""
-    # Сибирь
-    if (50 <= lat <= 70) and (60 <= lon <= 180):
-        return True
-    # Канадская тайга
-    if (50 <= lat <= 70) and (-140 <= lon <= -60):
-        return True
-    # Амазония
-    if (-20 <= lat <= 10) and (-80 <= lon <= -50):
-        return True
-    # Гималаи
-    if (25 <= lat <= 35) and (75 <= lon <= 100):
-        return True
-    return False
+def value_to_bortle(value):
+    """Конвертируем значение в шкалу Бортля"""
+    if value <= 0.1: return 1
+    elif value <= 0.3: return 2
+    elif value <= 0.5: return 3
+    elif value <= 1.0: return 4
+    elif value <= 3.0: return 5
+    elif value <= 6.0: return 6
+    elif value <= 10.0: return 7
+    elif value <= 20.0: return 8
+    else: return 9
 
-def get_light_pollution_data(lat, lon):
-    """Основная функция получения данных о световом загрязнении"""
+def analyze_map_colors(lat, lon):
+    """Анализируем цвета карты как последний вариант"""
+    try:
+        screenshot_path = save_screenshot(str(lat), str(lon), "color_analysis")
+        driver.save_screenshot(screenshot_path)
+        logger.info(f"Color analysis screenshot: {screenshot_path}")
+        
+        image = Image.open(screenshot_path)
+        img_array = np.array(image)
+        
+        height, width = img_array.shape[:2]
+        margin = 0.3
+        start_y = int(height * margin)
+        end_y = int(height * (1 - margin))
+        start_x = int(width * margin)
+        end_x = int(width * (1 - margin))
+        
+        map_area = img_array[start_y:end_y, start_x:end_x]
+        
+        if map_area.size == 0:
+            return 4
+        
+        # Простой анализ по средней яркости
+        pixels = map_area.reshape(-1, 3)
+        avg_brightness = np.mean(pixels) / 255.0
+        
+        if avg_brightness < 0.1: return 1
+        elif avg_brightness < 0.2: return 2
+        elif avg_brightness < 0.3: return 3
+        elif avg_brightness < 0.4: return 4
+        elif avg_brightness < 0.5: return 5
+        elif avg_brightness < 0.6: return 6
+        elif avg_brightness < 0.7: return 7
+        elif avg_brightness < 0.8: return 8
+        else: return 9
+        
+    except Exception as e:
+        logger.error(f"Color analysis failed: {e}")
+        return 4
+
+def get_light_pollution_from_map(lat, lon):
+    """Основная функция - УВЕЛИЧИВАЕМ ZOOM ДЛЯ ТОЧНОСТИ"""
+    global driver
     
-    print("Analyzing urbanization level...")
-    bortle_level = get_urbanization_level(lat, lon)
-    
-    print(f"Final Bortle level: {bortle_level}")
-    
-    source = "Environmental Analysis"
-    return bortle_level, source
+    with browser_lock:
+        try:
+            # ЗАКРЫВАЕМ И ПЕРЕСОЗДАЕМ БРАУЗЕР ДЛЯ КАЖДОГО ЗАПРОСА
+            if driver:
+                driver.quit()
+                driver = None
+            
+            cleanup_screenshots()
+            init_browser()  # Новый браузер для каждого запроса
+            
+            # УВЕЛИЧИВАЕМ ZOOM ДЛЯ ТОЧНОСТИ КООРДИНАТ
+            zoom_level = 14  # Вместо 10 - более точный zoom
+            url = f"https://www.lightpollutionmap.info/#zoom={zoom_level}&lat={lat}&lon={lon}&layers=B0FFFFFFTFFFF"
+            logger.info(f"Fresh browser opening: {lat}, {lon} (zoom: {zoom_level})")
+            
+            driver.get(url)
+            time.sleep(10)
+            
+            set_max_opacity()
+            
+            # ТОЧНЫЕ КЛИКИ В ЦЕНТР КАРТЫ
+            popup_data = click_multiple_locations()
+            
+            if popup_data and 'bortle_level' in popup_data:
+                bortle_level = popup_data['bortle_level']
+                logger.info(f"Success with popup data: Bortle {bortle_level}")
+            else:
+                # Запасной вариант
+                logger.warning("Popup data not found, using color analysis")
+                bortle_level = analyze_map_colors(lat, lon)
+                popup_data = {
+                    'bortle_level': bortle_level,
+                    'source': 'Color Analysis',
+                    'confidence': 'low'
+                }
+            
+            # Финальный скриншот
+            final_screenshot = save_screenshot(str(lat), str(lon), str(bortle_level))
+            driver.save_screenshot(final_screenshot)
+            logger.info(f"Final screenshot saved: {final_screenshot}")
+            
+            return popup_data
+            
+        except Exception as e:
+            logger.error(f"Map processing failed: {e}")
+            # Все равно закрываем браузер при ошибке
+            if driver:
+                driver.quit()
+                driver = None
+            raise
+
 
 @app.route("/api/light-pollution", methods=["GET"])
 def get_light_pollution():
@@ -247,26 +424,58 @@ def get_light_pollution():
         if not (-90 <= lat <= 90) or not (-180 <= lon <= 180):
             return jsonify({"error": "Invalid coordinates"}), 400
             
-        print(f"Processing coordinates: {lat}, {lon}")
+        logger.info(f"Processing: {lat}, {lon}")
         
-        # Получаем данные
-        bortle_level, source = get_light_pollution_data(lat, lon)
-        
-        # Логируем в консоль
-        print(f"Bortle Level: {bortle_level}, Source: {source}")
-        
-        return jsonify({
-            "bortle_level": bortle_level,
-            "location": f"{lat:.4f}, {lon:.4f}"
-        })
+        try:
+            future = executor.submit(get_light_pollution_from_map, lat, lon)
+            result = future.result(timeout=45)
+            
+            response = {
+                "bortle_level": result['bortle_level'],
+                "location": f"{lat:.4f}, {lon:.4f}",
+                "source": result['source'],
+                "confidence": result.get('confidence', 'medium'),
+                "raw_value": result.get('raw_value')
+            }
+            
+            logger.info(f"Success: Bortle {result['bortle_level']}")
+            return jsonify(response)
+            
+        except FutureTimeoutError:
+            logger.error("Timeout")
+            return jsonify({
+                "error": "Request timeout",
+                "bortle_level": None
+            }), 408
+            
+        except Exception as e:
+            logger.error(f"Processing failed: {e}")
+            return jsonify({
+                "error": f"Failed to get light pollution data: {str(e)}",
+                "bortle_level": None
+            }), 500
         
     except Exception as e:
-        print(f"General error: {str(e)}")
-        return jsonify({"error": str(e)}), 500
+        logger.error(f"API error: {e}")
+        return jsonify({
+            "error": "Internal server error",
+            "bortle_level": None
+        }), 500
 
 @app.route("/")
 def index():
     return render_template("index.html")
 
+# Инициализация
+with app.app_context():
+    init_browser()
+
+@atexit.register
+def cleanup():
+    global driver
+    if driver:
+        driver.quit()
+    cleanup_screenshots()
+
 if __name__ == "__main__":
-    app.run(debug=True, host="0.0.0.0", port=5000)
+    app.run(host="0.0.0.0", port=5000, debug=False)

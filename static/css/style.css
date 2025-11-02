@@ -90,14 +90,6 @@ h1 {
     color: #ffffff;
     font-size: 1.1rem;
     text-align: center;
-    transition: all 0.3s ease;
-}
-
-.coordinates input:focus {
-    outline: none;
-    border-color: #ffffff;
-    box-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
-    background-color: rgba(0, 0, 0, 0.6);
 }
 
 #check-btn {
@@ -152,7 +144,7 @@ h1 {
     display: none;
 }
 
-/* Новая шкала Бортля - один общий градиент */
+/* Старый стиль шкалы Бортля - один общий градиент */
 .bortle-meter {
     margin: 20px 0;
     height: 40px;
@@ -166,40 +158,22 @@ h1 {
 .bortle-meter .level {
     height: 100%;
     background: linear-gradient(to right, 
-        #001122 0%, 
-        #003366 11%, 
-        #0055aa 22%, 
-        #3366cc 33%, 
-        #5577ee 44%, 
-        #7777ff 55%, 
-        #9977ff 66%, 
-        #bb77ff 77%, 
-        #dd77ff 88%, 
-        #ffffff 100%);
+        #000000 0%,     /* Черный - уровень 1 */
+        #1a1a1a 11%,    /* Почти черный */
+        #333333 22%,    /* Темно-серый */
+        #4d4d4d 33%,    /* Серый */
+        #666666 44%,    /* Средне-серый */
+        #808080 55%,    /* Серый */
+        #999999 66%,    /* Светло-серый */
+        #b3b3b3 77%,    /* Очень светлый серый */
+        #cccccc 88%,    /* Почти белый */
+        #ffffff 100%    /* Белый - уровень 9 */
+    );
     border-radius: 20px;
     transform: scaleX(0);
     transform-origin: left;
     transition: transform 1.5s ease-out;
     position: relative;
-}
-
-/* Индикатор текущего уровня */
-
-
-/* Анимация появления результата */
-@keyframes slideInUp {
-    from {
-        opacity: 0;
-        transform: translateY(20px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-.result-animation {
-    animation: slideInUp 0.6s ease-out;
 }
 
 /* Анимация шкалы слева-направо */
@@ -222,15 +196,6 @@ h1 {
     padding: 30px 20px;
 }
 
-.loading-spinner-large {
-    border: 6px solid rgba(255, 255, 255, 0.3);
-    border-radius: 50%;
-    border-top: 6px solid #ffffff;
-    width: 60px;
-    height: 60px;
-    animation: spin 1.5s linear infinite, pulse 2s ease-in-out infinite;
-    margin: 0 auto 20px;
-}
 
 .loading-text {
     font-size: 1.3rem;
@@ -251,10 +216,7 @@ h1 {
     100% { transform: rotate(360deg); }
 }
 
-@keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.7; }
-}
+
 
 /* Спиннер для кнопки */
 .button-loading-spinner {
@@ -354,15 +316,15 @@ h1 {
 
 
 /* Цвета для каждого уровня Бортля */
-.level-1 { border-color: #001122; background: linear-gradient(135deg, #001122, #003366); }
-.level-2 { border-color: #003366; background: linear-gradient(135deg, #003366, #0055aa); }
-.level-3 { border-color: #0055aa; background: linear-gradient(135deg, #0055aa, #3366cc); }
-.level-4 { border-color: #3366cc; background: linear-gradient(135deg, #3366cc, #5577ee); }
-.level-5 { border-color: #5577ee; background: linear-gradient(135deg, #5577ee, #7777ff); }
-.level-6 { border-color: #7777ff; background: linear-gradient(135deg, #7777ff, #9977ff); }
-.level-7 { border-color: #9977ff; background: linear-gradient(135deg, #9977ff, #bb77ff); }
-.level-8 { border-color: #bb77ff; background: linear-gradient(135deg, #bb77ff, #dd77ff); }
-.level-9 { border-color: #dd77ff; background: linear-gradient(135deg, #dd77ff, #ffffff); }
+.level-color-indicator.level-1 { background: #000000; }
+.level-color-indicator.level-2 { background: #1a1a1a; }
+.level-color-indicator.level-3 { background: #333333; }
+.level-color-indicator.level-4 { background: #4d4d4d; }
+.level-color-indicator.level-5 { background: #666666; }
+.level-color-indicator.level-6 { background: #808080; }
+.level-color-indicator.level-7 { background: #999999; }
+.level-color-indicator.level-8 { background: #b3b3b3; }
+.level-color-indicator.level-9 { background: #cccccc; }
 
 .level-header {
     display: flex;
@@ -578,4 +540,268 @@ h1 {
         margin: 10px auto;
         padding: 20px;
     }
+}
+/* Стили для карты - в палитре сайта */
+/* Стили для карты - темный дизайн с белой обводкой */
+#map {
+    height: 500px;
+    width: 100%;
+    border-radius: 20px;
+    margin-bottom: 20px;
+    box-shadow: 
+        0 20px 40px rgba(0, 0, 0, 0.4),
+        0 0 0 2px rgba(255, 255, 255, 0.3), /* Белая обводка */
+        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    border: 2px solid rgba(255, 255, 255, 0.3); /* Белая граница */
+    overflow: hidden;
+    position: relative;
+}
+
+/* Возвращаем стандартный темный дизайн карты */
+.leaflet-container {
+    background: #262626 !important;
+    font-family: 'Arial', sans-serif !important;
+}
+
+/* Кастомные контролы - белые в стиле сайта */
+.leaflet-control-zoom a {
+    background: rgba(255, 255, 255, 0.95) !important;
+    backdrop-filter: blur(20px);
+    border: 2px solid rgba(255, 255, 255, 0.8) !important;
+    color: #1a1a1a !important;
+    font-weight: bold;
+    font-size: 18px;
+    transition: all 0.3s ease;
+    width: 35px !important;
+    height: 35px !important;
+    line-height: 30px !important;
+    text-align: center;
+}
+
+.leaflet-control-zoom a:hover {
+    background: rgba(255, 255, 255, 1) !important;
+    transform: scale(1.1);
+    border-color: #ffffff !important;
+    box-shadow: 0 0 15px rgba(255, 255, 255, 0.5);
+}
+
+.leaflet-control-zoom a.leaflet-control-zoom-in {
+    border-bottom: 1px solid rgba(0, 0, 0, 0.2) !important;
+    border-radius: 10px 10px 0 0 !important;
+}
+
+.leaflet-control-zoom a.leaflet-control-zoom-out {
+    border-radius: 0 0 10px 10px !important;
+}
+
+.leaflet-control-zoom {
+    border: 2px solid rgba(255, 255, 255, 0.8) !important;
+    border-radius: 12px !important;
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.1) !important;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+}
+
+/* Кастомный маркер - белый как в дизайне */
+.custom-marker {
+    background: none !important;
+    border: none !important;
+}
+
+.marker-pulse {
+    position: relative;
+    width: 30px;
+    height: 30px;
+}
+
+.marker-glow {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.8) 0%, transparent 70%);
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+    opacity: 0.6;
+}
+
+.marker-center {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 12px;
+    height: 12px;
+    background: white;
+    border-radius: 50%;
+    border: 2px solid #1a1a1a;
+    box-shadow: 0 0 15px rgba(255, 255, 255, 0.8);
+}
+
+@keyframes pulse {
+    0% { transform: scale(0.8); opacity: 0.6; }
+    50% { transform: scale(1.2); opacity: 0.3; }
+    100% { transform: scale(0.8); opacity: 0.6; }
+}
+
+
+/* Кастомный popup - темный с белой обводкой */
+.leaflet-popup-content-wrapper {
+    background: rgba(25, 25, 25, 0.95) !important;
+    backdrop-filter: blur(15px);
+    border-radius: 15px !important;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+
+.leaflet-popup-content {
+    color: white !important;
+    font-family: 'Arial', sans-serif !important;
+    font-size: 14px;
+    margin: 15px !important;
+}
+
+.leaflet-popup-tip {
+    background: rgba(25, 25, 25, 0.95) !important;
+    border: 2px solid rgba(255, 255, 255, 0.3) !important;
+}
+
+/* Attribution - темный с белым текстом */
+.leaflet-control-attribution {
+    background: rgba(25, 25, 25, 0.9) !important;
+    color: rgba(255, 255, 255, 0.7) !important;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    border-radius: 6px !important;
+    font-size: 11px !important;
+}
+
+.leaflet-control-attribution a {
+    color: rgba(255, 255, 255, 0.9) !important;
+}
+
+/* Убираем фильтры с тайлов - возвращаем нормальные цвета */
+.leaflet-tile {
+    filter: none !important;
+}
+
+/* Убираем общую анимацию glow */
+.leaflet-control-zoom a {
+    animation: none !important; /* Убираем анимацию */
+}
+
+/* Отдельные стили для кнопки увеличения (+) */
+.leaflet-control-zoom-in {
+    opacity: 1 !important;
+    transition: opacity 0.3s ease !important;
+}
+
+.leaflet-control-zoom-in:hover {
+    opacity: 0.6 !important;
+    transform: none !important; /* Без изменения размера */
+}
+
+/* Отдельные стили для кнопки уменьшения (-) */
+.leaflet-control-zoom-out {
+    opacity: 1 !important;
+    transition: opacity 0.3s ease !important;
+}
+
+.leaflet-control-zoom-out:hover {
+    opacity: 0.6 !important;
+    transform: none !important; /* Без изменения размера */
+}
+
+/* Убедимся что базовые стили сохраняются */
+.leaflet-control-zoom a {
+    background: rgba(255, 255, 255, 0.95) !important;
+    backdrop-filter: blur(20px);
+    border: 2px solid rgba(255, 255, 255, 0.8) !important;
+    color: #1a1a1a !important;
+    font-weight: bold;
+    font-size: 18px;
+    width: 35px !important;
+    height: 35px !important;
+    line-height: 30px !important;
+    text-align: center;
+}
+
+.leaflet-control-zoom a.leaflet-control-zoom-in {
+    border-bottom: 1px solid rgba(0, 0, 0, 0.2) !important;
+    border-radius: 10px 10px 0 0 !important;
+}
+
+.leaflet-control-zoom a.leaflet-control-zoom-out {
+    border-radius: 0 0 10px 10px !important;
+}
+
+.leaflet-control-zoom {
+    border: 2px solid rgba(255, 255, 255, 0.8) !important;
+    border-radius: 12px !important;
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.1) !important;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+}
+/* Добавляем в конец CSS файла */
+
+
+/* Убираем стили для .bortle-level-item - оставляем фон как есть */
+
+/* ТОЛЬКО индикаторы цветов - ЧЕРНО-БЕЛЫЕ */
+.level-color-indicator.level-1 { background: #000000 !important; }
+.level-color-indicator.level-2 { background: #1a1a1a !important; }
+.level-color-indicator.level-3 { background: #333333 !important; }
+.level-color-indicator.level-4 { background: #4d4d4d !important; }
+.level-color-indicator.level-5 { background: #666666 !important; }
+.level-color-indicator.level-6 { background: #808080 !important; }
+.level-color-indicator.level-7 { background: #999999 !important; }
+.level-color-indicator.level-8 { background: #b3b3b3 !important; }
+.level-color-indicator.level-9 { background: #cccccc !important; }
+
+/* Возвращаем маркер */
+.custom-marker {
+    display: block !important;
+}
+
+.marker-pulse {
+    position: relative;
+    width: 40px;
+    height: 40px;
+}
+
+.marker-glow {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.3) 50%, transparent 70%);
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+    opacity: 0.8;
+}
+
+.marker-center {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 16px;
+    height: 16px;
+    background: white;
+    border-radius: 50%;
+    border: 3px solid #1a1a1a;
+    box-shadow: 
+        0 0 20px rgba(255, 255, 255, 0.8),
+        0 0 40px rgba(255, 255, 255, 0.4);
+}
+
+@keyframes pulse {
+    0% { transform: scale(0.8); opacity: 0.8; }
+    50% { transform: scale(1.3); opacity: 0.4; }
+    100% { transform: scale(0.8); opacity: 0.8; }
+}
+
+/* Убедимся что стандартный маркер скрыт */
+.leaflet-marker-icon:not(.custom-marker) {
+    display: none !important;
 }

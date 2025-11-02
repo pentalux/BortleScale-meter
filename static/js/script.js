@@ -1,7 +1,83 @@
-const map = L.map('map').setView([51.505, -0.09], 5);
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '© OpenStreetMap contributors'
+// Инициализация карты с темным дизайном
+const map = L.map('map', {
+    center: [30, 0],
+    zoom: 2,
+    zoomControl: false,
+    fadeAnimation: true,
+    zoomAnimation: true
+});
+
+// Темные тайлы как было раньше
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    attribution: '©OpenStreetMap, ©CartoDB',
+    maxZoom: 20
 }).addTo(map);
+
+// Добавляем кастомные контролы
+L.control.zoom({
+    position: 'topright'
+}).addTo(map);
+
+// Кастомный маркер
+const customIcon = L.divIcon({
+    className: 'custom-marker',
+    html: `
+        <div class="marker-pulse">
+            <div class="marker-glow"></div>
+            <div class="marker-center"></div>
+        </div>
+    `,
+    iconSize: [40, 40],
+    iconAnchor: [20, 20]
+});
+
+let currentMarker = null;
+
+map.on('click', function(e) {
+    const lat = e.latlng.lat;
+    const lng = e.latlng.lng;
+    
+    console.log('Map clicked at:', lat, lng); // Для отладки
+    
+    // Удаляем предыдущий маркер
+    if (currentMarker) {
+        map.removeLayer(currentMarker);
+    }
+    
+    // Создаем маркер с нашим кастомным иконом
+    currentMarker = L.marker([lat, lng], {
+        icon: customIcon
+    }).addTo(map);
+    
+    console.log('Marker created:', currentMarker); // Для отладки
+    
+    // Заполняем поля координат
+    document.getElementById('latitude').value = lat.toFixed(6);
+    document.getElementById('longitude').value = lng.toFixed(6);
+});
+
+// Проверяем что карта загрузилась
+// Убираем title атрибуты после загрузки карты
+map.whenReady(function() {
+    setTimeout(() => {
+        const zoomIn = document.querySelector('.leaflet-control-zoom-in');
+        const zoomOut = document.querySelector('.leaflet-control-zoom-out');
+        
+        if (zoomIn) zoomIn.removeAttribute('title');
+        if (zoomOut) zoomOut.removeAttribute('title');
+        
+        // Центрируем карту после загрузки
+        map.invalidateSize();
+    }, 100);
+});
+
+// Альтернативно - отключаем все title у контролов
+map.on('load', function() {
+    const controls = document.querySelectorAll('.leaflet-control-zoom a');
+    controls.forEach(control => {
+        control.removeAttribute('title');
+    });
+});
 
 let marker = null;
 const bortleDescriptions = {
@@ -20,7 +96,6 @@ function updateCoordinates(lat, lng) {
     if (!marker) {
         marker = L.marker([lat, lng]).addTo(map)
             .bindPopup(`Selected location:<br>${lat.toFixed(4)}, ${lng.toFixed(4)}`)
-            .openPopup();
     } else {
         marker.setLatLng([lat, lng])
             .setPopupContent(`Selected location:<br>${lat.toFixed(4)}, ${lng.toFixed(4)}`);
@@ -42,7 +117,7 @@ async function getBortleLevel() {
         showLoading();
         
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 15000);
+        const timeoutId = setTimeout(() => controller.abort(), 45000); // 45 секунд
         
         const response = await fetch(`/api/light-pollution?lat=${lat}&lon=${lon}`, {
             signal: controller.signal
@@ -138,15 +213,25 @@ function showError(message) {
     `;
 }
 
+// Инициализируем карту по центру экрана
 document.addEventListener('DOMContentLoaded', () => {
+    // Добавляем обработчик клика на карту
     map.on('click', (e) => {
         const { lat, lng } = e.latlng;
         updateCoordinates(lat, lng);
     });
 
+    // Добавляем обработчик для кнопки
     document.getElementById('check-btn').addEventListener('click', getBortleLevel);
+    
+    // Пересчитываем размер карты после загрузки DOM
+    setTimeout(() => {
+        map.invalidateSize();
+    }, 100);
+    
+    // Проверяем видимость информационного раздела
+    checkScroll();
 });
-// Добавить в конец файла script.js
 
 // Анимация появления при скролле
 function checkScroll() {
@@ -164,15 +249,6 @@ function checkScroll() {
 // Проверяем при загрузке и скролле
 window.addEventListener('load', checkScroll);
 window.addEventListener('scroll', checkScroll);
-
-// Инициализируем карту по центру экрана
-document.addEventListener('DOMContentLoaded', () => {
-    // ... существующий код ...
-    
-    // Проверяем видимость информационного раздела
-    checkScroll();
-});
-// Добавить в конец файла script.js
 
 // Аккордеон для информации о шкале Бортля
 document.addEventListener('DOMContentLoaded', function() {
@@ -201,6 +277,11 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
-    
-    // Остальной существующий код...
+});
+
+// Дополнительно: пересчитываем размер карты при изменении размера окна
+window.addEventListener('resize', function() {
+    setTimeout(() => {
+        map.invalidateSize();
+    }, 250);
 });
