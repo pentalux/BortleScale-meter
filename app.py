@@ -41,6 +41,11 @@ def init_browser():
         chrome_options.add_argument("--window-size=1400,1000")
         chrome_options.add_argument("--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
         
+        # Добавляем опции для лучшего управления
+        chrome_options.add_argument("--remote-debugging-port=0")
+        chrome_options.add_experimental_option("excludeSwitches", ["enable-automation"])
+        chrome_options.add_experimental_option('useAutomationExtension', False)
+        
         from webdriver_manager.chrome import ChromeDriverManager
         from selenium.webdriver.chrome.service import Service
         
@@ -53,6 +58,19 @@ def init_browser():
     except Exception as e:
         logger.error(f"Browser init failed: {e}")
         raise
+
+def cleanup_browser():
+    """Завершаем только наш браузер"""
+    global driver
+    try:
+        if driver:
+            logger.info("Closing our browser instance...")
+            driver.quit()
+            driver = None
+            logger.info("Browser closed successfully")
+    except Exception as e:
+        logger.error(f"Error closing browser: {e}")
+        driver = None
 
 def ensure_browser_ready():
     global driver
@@ -357,21 +375,20 @@ def analyze_map_colors(lat, lon):
         return 4
 
 def get_light_pollution_from_map(lat, lon):
-    """Основная функция - УВЕЛИЧИВАЕМ ZOOM ДЛЯ ТОЧНОСТИ"""
+    """Основная функция с гарантированным завершением ТОЛЬКО нашего браузера"""
     global driver
     
     with browser_lock:
         try:
-            # ЗАКРЫВАЕМ И ПЕРЕСОЗДАЕМ БРАУЗЕР ДЛЯ КАЖДОГО ЗАПРОСА
-            if driver:
-                driver.quit()
-                driver = None
-            
+            # Очищаем предыдущий браузер если есть
+            cleanup_browser()
             cleanup_screenshots()
-            init_browser()  # Новый браузер для каждого запроса
+            
+            # Создаем новый браузер для этого запроса
+            init_browser()
             
             # УВЕЛИЧИВАЕМ ZOOM ДЛЯ ТОЧНОСТИ КООРДИНАТ
-            zoom_level = 14  # Вместо 10 - более точный zoom
+            zoom_level = 14
             url = f"https://www.lightpollutionmap.info/#zoom={zoom_level}&lat={lat}&lon={lon}&layers=B0FFFFFFTFFFF"
             logger.info(f"Fresh browser opening: {lat}, {lon} (zoom: {zoom_level})")
             
@@ -405,11 +422,11 @@ def get_light_pollution_from_map(lat, lon):
             
         except Exception as e:
             logger.error(f"Map processing failed: {e}")
-            # Все равно закрываем браузер при ошибке
-            if driver:
-                driver.quit()
-                driver = None
             raise
+        finally:
+            # ГАРАНТИРОВАННО ЗАКРЫВАЕМ ТОЛЬКО НАШ БРАУЗЕР
+            cleanup_browser()
+            logger.info("Our browser instance closed successfully")
 
 
 @app.route("/api/light-pollution", methods=["GET"])
@@ -428,7 +445,7 @@ def get_light_pollution():
         
         try:
             future = executor.submit(get_light_pollution_from_map, lat, lon)
-            result = future.result(timeout=45)
+            result = future.result(timeout=120)
             
             response = {
                 "bortle_level": result['bortle_level'],
@@ -443,6 +460,7 @@ def get_light_pollution():
             
         except FutureTimeoutError:
             logger.error("Timeout")
+            cleanup_browser()  # Закрываем браузер при таймауте
             return jsonify({
                 "error": "Request timeout",
                 "bortle_level": None
@@ -450,6 +468,7 @@ def get_light_pollution():
             
         except Exception as e:
             logger.error(f"Processing failed: {e}")
+            cleanup_browser()  # Закрываем браузер при ошибке
             return jsonify({
                 "error": f"Failed to get light pollution data: {str(e)}",
                 "bortle_level": None
@@ -457,6 +476,7 @@ def get_light_pollution():
         
     except Exception as e:
         logger.error(f"API error: {e}")
+        cleanup_browser()  # Закрываем браузер при любой ошибке
         return jsonify({
             "error": "Internal server error",
             "bortle_level": None
@@ -466,16 +486,17 @@ def get_light_pollution():
 def index():
     return render_template("index.html")
 
-# Инициализация
-with app.app_context():
-    init_browser()
-
 @atexit.register
 def cleanup():
-    global driver
-    if driver:
-        driver.quit()
+    """Очистка при завершении приложения"""
+    logger.info("Application shutdown - cleaning up...")
+    cleanup_browser()
     cleanup_screenshots()
+    executor.shutdown(wait=False)
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=False)
+    try:
+        app.run(host="0.0.0.0", port=5000, debug=False)
+    finally:
+        # Дополнительная гарантия очистки
+        cleanup_browser()

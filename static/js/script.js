@@ -1,11 +1,35 @@
-// Инициализация карты с темным дизайном
+// Инициализация карты с ограничениями
 const map = L.map('map', {
     center: [30, 0],
     zoom: 2,
     zoomControl: false,
     fadeAnimation: true,
-    zoomAnimation: true
+    zoomAnimation: true,
+    // ОГРАНИЧЕНИЯ ПЕРЕМЕЩЕНИЯ КАРТЫ
+    minZoom: 2,
+    maxZoom: 18,
+    maxBounds: [
+        [-90, -180], // Юго-западный угол
+        [90, 180]    // Северо-восточный угол
+    ],
+    maxBoundsViscosity: 1.0 // Жесткие границы
 });
+
+// Темные тайлы как было раньше
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    attribution: '©OpenStreetMap, ©CartoDB',
+    maxZoom: 20
+}).addTo(map);
+
+// ДОБАВЛЯЕМ ОГРАНИЧЕНИЯ НА ПАННИНГ (ПЕРЕМЕЩЕНИЕ)
+map.setMaxBounds([
+    [-85, -175], // Небольшой отступ от краев
+    [85, 175]
+]);
+
+// Ограничиваем zoom для точности
+map.options.minZoom = 2;
+map.options.maxZoom = 15;
 
 // Темные тайлы как было раньше
 L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
@@ -117,7 +141,7 @@ async function getBortleLevel() {
         showLoading();
         
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 45000); // 45 секунд
+        const timeoutId = setTimeout(() => controller.abort(), 120000); // 45 секунд
         
         const response = await fetch(`/api/light-pollution?lat=${lat}&lon=${lon}`, {
             signal: controller.signal
