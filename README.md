@@ -22,4 +22,5 @@ To test the application, you can easily deploy it locally:
 1. Clone this repository to your machine.
 2. Run the application in your local environment (**localhost** configuration is fully unlocked for demonstration purposes).
 
+---
 *Created by P.A. Galochkin (@pentalux). All rights reserved.*
