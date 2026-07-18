@@ -27,7 +27,7 @@ Mobile-first interface optimized for seamless use on any device.
 
 ### Deployment & Status
 
->   **Hosting Status:** The public AWS EC2 production instance (`http://13.49.145.91:8080`) is currently offline as the active hosting period has concluded. 
+>  **Hosting Status:** The public AWS EC2 production instance (`http://13.49.145.91:8080`) is currently offline as the active hosting period has concluded. 
 
 To test the application, you can easily deploy it locally:
 1. Clone this repository to your machine.
