@@ -2,7 +2,7 @@
 
 An interactive tool designed for astronomers and stargazers to measure light pollution levels anywhere on Earth. By processing real spatial data, the service determines celestial object visibility according to the 9-level Bortle scale. 
 
-<img src="demo.gif" width="320" align="left" alt="Bortle Scale Meter Demo" style="margin-right: 20px; margin-bottom: 20px;">
+<img src="demo.png" width="320" align="left" alt="Bortle Scale Meter Demo" style="margin-right: 20px; margin-bottom: 20px;">
 
 <table>
 <tr>
