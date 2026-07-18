@@ -1,10 +1,27 @@
-Bortle Scale Meter — An interactive tool for astronomers and stargazers to measure light pollution levels anywhere on Earth. Using real light pollution data, the service determines celestial object visibility according to the 9-level Bortle scale. It provides a user-friendly interface compatible with any device.
+# Bortle Scale Meter
 
-Its data collection principle is based on automated data processing from https://www.lightpollutionmap.info
+An interactive tool designed for astronomers and stargazers to measure light pollution levels anywhere on Earth. By processing real spatial data, the service determines celestial object visibility according to the 9-level Bortle scale. 
 
-The webpage is hosted on Amazon Web Services EC2
-You can access it through this link ---> http://13.49.145.91:8080 <---
-This code directory will ONLY allow you to deploy it on localhost (for demonstration purposes only)
+<img src="demo.gif" width="320" align="left" alt="Bortle Scale Meter Demo" style="margin-right: 20px; margin-bottom: 20px;">
 
-Created by Galochkin P.A. a.k.a. @pentalux, all rights reserved.
+### Core Features
 
+* **Global Coverage:** Instantly determines light pollution levels for any geographical coordinate on Earth.
+* **Bortle Scale Integration:** Automatically translates raw radiance data into the standard 9-level Bortle Dark-Sky Scale to evaluate stargazing conditions.
+* **Responsive Design:** Features a mobile-first, user-friendly interface optimized for seamless use on any device in the field.
+
+### Data Collection
+
+The system's data processing pipeline is built on automated data extraction and analysis from [Light Pollution Map](https://www.lightpollutionmap.info).
+
+---
+
+### Deployment & Status
+
+> **Hosting Status:** The public AWS EC2 production instance (`http://13.49.145.91:8080`) is currently offline as the active hosting period has concluded. 
+
+To test the application, you can easily deploy it locally:
+1. Clone this repository to your machine.
+2. Run the application in your local environment (**localhost** configuration is fully unlocked for demonstration purposes).
+
+*Created by P.A. Galochkin (@pentalux). All rights reserved.*
