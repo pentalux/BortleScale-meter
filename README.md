@@ -7,13 +7,13 @@ An interactive tool designed for astronomers and stargazers to measure light pol
 ### Core Features
 <br>
 
-* **Global Coverage** <br> Instantly determines light pollution levels for any geographical coordinate on Earth.
+    * **Global Coverage** <br> Instantly determines light pollution levels for any geographical coordinate on Earth.
 <br>
 
-* **Bortle Scale Integration** <br> Automatically translates raw radiance data into the standard 9-level Bortle Dark-Sky Scale.
+    * **Bortle Scale Integration** <br> Automatically translates raw radiance data into the standard 9-level Bortle Dark-Sky Scale.
 <br>
 
-* **Responsive Design** <br> Mobile-first interface optimized for seamless use on any device.
+    * **Responsive Design** <br> Mobile-first interface optimized for seamless use on any device.
 
 <br clear="left"/>
 <br>
