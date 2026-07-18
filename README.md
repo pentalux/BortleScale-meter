@@ -2,35 +2,22 @@
 
 An interactive tool designed for astronomers and stargazers to measure light pollution levels anywhere on Earth. By processing real spatial data, the service determines celestial object visibility according to the 9-level Bortle scale. 
 
-<img src="demo.png" width="320" align="left" alt="Bortle Scale Meter Demo" style="margin-right: 20px; margin-bottom: 20px;">
+<img src="demo.png" width="320" align="left" alt="Bortle Scale Meter Interface" style="margin-right: 20px; margin-bottom: 20px;">
 
-<table>
-<tr>
-<td width="340">
+### Core Features
 
-<img src="demo.gif" width="320">
+* **Global Coverage**
+  Instantly determines light pollution levels for any geographical coordinate on Earth.
+* **Bortle Scale Integration**
+  Automatically translates raw radiance data into the standard 9-level Bortle Dark-Sky Scale.
+* **Responsive Design**
+  Mobile-first interface optimized for seamless use on any device.
 
-</td>
+<br clear="left"/>
 
-<td>
+---
 
-<h3>Core Features</h3>
-
-<ul>
-<li><b>Global Coverage</b><br>
-Instantly determines light pollution levels for any geographical coordinate on Earth.</li>
-
-<li><b>Bortle Scale Integration</b><br>
-Automatically translates raw radiance data into the standard 9-level Bortle Dark-Sky Scale.</li>
-
-<li><b>Responsive Design</b><br>
-Mobile-first interface optimized for seamless use on any device.</li>
-
-</ul>
-
-</td>
-</tr>
-</table>
+### Deployment & Status
 
 > **Hosting Status:** The public AWS EC2 production instance (`http://13.49.145.91:8080`) is currently offline as the active hosting period has concluded. 
 
